@@ -12,23 +12,27 @@ contract Lender is User{
         owner = payable(msg.sender);
     }
     
+    event SuccessfullyInvested(address _from, address _to, bool _sent, bytes _data);
+    event PaymentReceived(address _from, uint256 _amount);
+
+
     Investment investment;
 
-    receive() external payable {}
+    receive() external payable {
+        emit PaymentReceived(msg.sender,msg.value);
+    }
     fallback() external payable {}
 
     function invest(Bank _bank, Investment _investment) public{
-        uint256 amount = _investment.getInvestmentAmount();
+        uint256 amount = _investment.getAmount();
         require(address(this).balance>=amount,"Insufficient Balance");
         (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
         require(sent,"Failed to send");
-        // investment=_investment;
-        // return msg.data;
+        emit SuccessfullyInvested(address(this), address(_bank),sent,data);
     }
 
     function withdraw(Bank _bank, Investment _investment) public {
         _bank.redeemInvestment(this,_investment);
     }
     
-    // function withdraw()
 }

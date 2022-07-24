@@ -2,34 +2,25 @@
 pragma solidity >=0.8.0;
 import "./Borrower.sol";
 import "./Bank.sol";
+import "./Portfolio.sol";
 
-contract Loan {
-    struct LoanInfo {
-        uint loanID;
-        uint256 amount;
-        uint timeToPay;
-        uint period;
-        uint interestRate;
-    }
-    LoanInfo loanInfo;
-
-    uint256 finalAmount;
-    uint initTime;
+contract Loan is Portfolio{
+    
     // uint256 periodicalPayment;
+
+    Info loanInfo;
 
     uint256 collateral;
     bool collateralDeposited;
 
-    enum Status {
-        approved,
-        rejected
-    }
-    Status status;
+    // false - rejected, true - approved
+    bool status;
+    
+    event FinalAmountCalculated(uint _p, uint _r, uint _n, uint256 _finalAmount);
 
     Borrower borrower;
-    address bank;
 
-    constructor(LoanInfo memory _loanInfo, Borrower _borrower) {
+    constructor(Info memory _loanInfo, Borrower _borrower) {
         loanInfo=_loanInfo;
         borrower=_borrower;
         bank = msg.sender; 
@@ -37,26 +28,21 @@ contract Loan {
         
         uint p = _loanInfo.amount;
         uint r = _loanInfo.interestRate;
-        uint n = _loanInfo.timeToPay/_loanInfo.period;
-        finalAmount = p*((1+(r/100))**n);
+        uint n = _loanInfo.tenure/_loanInfo.period;
+        finalAmount = p*((1+r/100)**n);
+        emit FinalAmountCalculated(p,r,n,finalAmount);
     }
     
-    modifier onlyBank() {
-        require(msg.sender==bank);
-        _;
-    }
-
-
-    function getLoanAmount() public view returns(uint256){
+    function getAmount() public view override returns(uint256) {
         return loanInfo.amount;
     }
 
-    function approveLoan() onlyBank public {
-        status=Status.approved;
+    function setStatus(bool _status) public {
+        status=_status;
     }
 
-    function rejectLoan() onlyBank public {
-        status=Status.rejected;
+    function getStatus() public view returns(bool) {
+        return status;
     }
 
     function setCollateral(uint256 _collateral) public {
@@ -75,26 +61,8 @@ contract Loan {
         collateralDeposited=true;
     }
 
-    function getStatus() public view returns(bool){
-        if (status==Status.approved){
-            return true;
-        } else {
-            return false;
-        }
-    }   
-
-
-    // function getPeriodicalPayment() public view returns(uint256){
-    //     return periodicalPayment;
-    // }
-
-
-    function getFinalAmount() public view returns(uint256){
+    function getFinalAmount() public view override returns (uint256) {
         return finalAmount;
-    }
-
-    function getInitTime() public view returns(uint){
-        return initTime;
     }
 
     function updateFinalAmount(uint256 amount) public onlyBank returns(uint256){

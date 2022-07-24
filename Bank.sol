@@ -11,18 +11,26 @@ import "./Investment.sol";
 
 contract Bank {
     
-    receive() external payable {}
-    fallback() external payable {}
-
     mapping(Borrower => Loan) loans;
     mapping(Lender => Investment) investments;
+
+    event CompletedPayment(bool _sent);
+    event CollateralReturned(address _from, address _to);
+    event LoanSanctioned(address _from, address _to);
+    event LoanPaidOff();
+    event PaymentReceived(address _from, uint256 _amount);
+
+    
+
+
+
 
     uint interest;
     uint collateralPercentage;
 
     uint256 collateralReserve;
 
-    constructor(uint _interest, uint _collateralPercentage) {
+    constructor (uint _interest, uint _collateralPercentage) payable {
         interest = _interest;
         collateralPercentage = _collateralPercentage;
     }
@@ -42,14 +50,14 @@ contract Bank {
     }
 
     function getCollateralRequirement(Loan _loan)public view returns(uint256) {
-        uint256 collateral = ((collateralPercentage * _loan.getLoanAmount()) / 100);
+        uint256 collateral = ((collateralPercentage * _loan.getAmount()) / 100);
         return collateral;
     }
 
     function approveLoan(Loan _loan) public returns(bool) {
         // check whether bank has enough funds to sanction loan
         require(getFunds() > _loan.getCollateral(), "Insufficient funds to sanction loan");
-        _loan.approveLoan();
+        _loan.setStatus(true);
         return _loan.getStatus();
         //emit sanction loan
 
@@ -59,40 +67,39 @@ contract Bank {
         require(getFunds() > amount, "Insufficient funds");
         (bool sent, bytes memory data) = address(_user).call{value: amount}("");
         // require(sent, "Failed to send Ether");
+
+        emit CompletedPayment(sent);
         return sent;
     }
 
 
     
 
-    function sanctionLoan(Loan _loan,bool _collateralDeposited,bytes memory paymentData,Borrower _borrower) public {
+    function sanctionLoan(Loan _loan,Borrower _borrower) public {
         
-        verifyPayment(_collateralDeposited,paymentData);
         _loan.setCollateralStatus();
-        uint256 loanAmount = _loan.getLoanAmount();
+        uint256 loanAmount = _loan.getAmount();
         bool paymentStatus = payUser(_borrower,loanAmount);
         if(paymentStatus==false){
             //Pay back collateral
             uint256 collateral = _loan.getCollateral();
             payUser(_borrower,collateral);
+            emit CollateralReturned(address(this),address(_borrower));
+        } else {
+            emit LoanSanctioned(address(this),address(_borrower));
         }
         collateralReserve+=_loan.getCollateral();
         loans[_borrower] = _loan;
     }
 
-    function verifyPayment(bool received, bytes memory paymentData) public {
-        require(received,"Payment not received");
-        // require(paymentData check something here,"");
-    }
-
-    function updateLoan(Borrower _borrower,Loan _loan,bool _receivedPayment,bytes memory paymentData,uint256 amount) public {
-        verifyPayment(_receivedPayment,paymentData);
+    
+    function updateLoan(Borrower _borrower,Loan _loan,uint256 amount) public {
         uint256 finalAmount = _loan.updateFinalAmount(amount);
         if (finalAmount==0){
             //Loan paid, so return collateral
             uint256 collateral = _loan.getCollateral();
             payUser(_borrower,collateral);
-
+            emit LoanPaidOff();
         }
     }
 
@@ -102,10 +109,14 @@ contract Bank {
         require(paymentStatus, "Failed to send Ether");
     }
 
-//add functionality to approve loans only if funds > investment returns
+
+
+    receive() external payable {
+        emit PaymentReceived(msg.sender,msg.value);
+    }
+    fallback() external payable {}
+
 // shift from collateral reserve to funds when loan period ends
 
 // periodic payments from borrower
-// withdraw function for lender
-// implement time
 }

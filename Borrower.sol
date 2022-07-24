@@ -4,11 +4,20 @@ import "./User.sol";
 import "./Loan.sol";
 
 contract Borrower is User{
-    UserInfo borrowerInfo;
-
-    // Loan loan;
     
-    constructor(UserInfo memory _borrowerInfo) {
+    UserInfo borrowerInfo;
+    
+    receive() external payable {
+        emit PaymentReceived(msg.sender,msg.value);
+    }
+    fallback() external payable {}
+
+    event CompletedPayment(bool _sent);
+    event DepositedCollateral(bool _sent);
+    event PaymentDetails(uint256 _amount, uint256 _finalAmount, uint256 _balance);
+    event PaymentReceived(address _from, uint256 _amount);
+    
+    constructor(UserInfo memory _borrowerInfo) payable {
         borrowerInfo = _borrowerInfo;
         owner = payable(msg.sender);
     }
@@ -19,14 +28,13 @@ contract Borrower is User{
         return collateral;
     }    
 
-
-
     function depositCollateral(Bank _bank, Loan _loan) public {
         bool approval = _bank.approveLoan(_loan);
         require(approval,"Loan Rejected");
         (bool sent, bytes memory data) = address(_bank).call{value: _loan.getCollateral()}("");
         require(sent, "Failed to send Ether");
-        _bank.sanctionLoan(_loan,sent,data,this);
+        emit DepositedCollateral(sent);
+        _bank.sanctionLoan(_loan,this);
     }
 
     function payLoan(Bank _bank, Loan _loan,uint256 amount) public {
@@ -35,16 +43,16 @@ contract Borrower is User{
         if (amount>finalAmount){
             amount = finalAmount;
         }
+        emit PaymentDetails(amount,finalAmount,address(this).balance);
         (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
+        emit CompletedPayment(sent);
+
         require(sent, "Failed to send Ether");
-        // _bank.verifyPayment(_loan,sent,data,this);
-        _bank.updateLoan(this,_loan,sent,data,amount);
+        _bank.updateLoan(this,_loan,amount);
 
     }
     
 
-    receive() external payable {}
-    fallback() external payable {}
 
 
 }
