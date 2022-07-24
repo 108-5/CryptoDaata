@@ -25,6 +25,10 @@ contract Lender is User{
         // investment=_investment;
         // return msg.data;
     }
+
+    function withdraw(Bank _bank, Investment _investment) public {
+        _bank.redeemInvestment(this,_investment);
+    }
     
     // function withdraw()
 }

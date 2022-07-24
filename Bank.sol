@@ -41,26 +41,6 @@ contract Bank {
         return loans[_borrower];
     }
 
-    // function applyLoan(Loan _loan) public {
-    //     // bool loanStatus = processLoan(_loan, msg.sender);
-    //     // require(loanStatus,"Failed to process loan");
-    //     require(getFunds() > _loan.getLoanAmount,"Insufficient funds in bank");
-    //     uint256 collateral = getCollateralRequirement(_loan);
-    //     return collateral;
-    //     // sanctionLoan(_loan,msg.sender);
-
-    // }
-
-    // function processLoan(Loan _loan, Borrower,_borrower) public returns(bool){
-    //     uint256 collateral = address(_borrower).balance;
-    //     if (address(_borrower).balance > collateral) {
-    //         _loan.approveLoan;
-    //     } else {
-    //         _loan.rejectLoan;
-    //     }
-    //     return _loan.getStatus();
-    // }
-
     function getCollateralRequirement(Loan _loan)public view returns(uint256) {
         uint256 collateral = ((collateralPercentage * _loan.getLoanAmount()) / 100);
         return collateral;
@@ -75,31 +55,51 @@ contract Bank {
 
     }
 
-    function verifyCollateralDeposit(Loan _loan, bool received, bytes memory paymentData) public {
-        require(received,"Collateral not received");
-        // require(paymentData check something here,"");
-        _loan.setCollateralStatus();
+    function payUser(User _user,uint256 amount) public returns(bool) {
+        require(getFunds() > amount, "Insufficient funds");
+        (bool sent, bytes memory data) = address(_user).call{value: amount}("");
+        // require(sent, "Failed to send Ether");
+        return sent;
     }
 
-    function payBorrower(Loan _loan,Borrower _borrower) public {
-        if(getFunds()>_loan.getLoanAmount()) {
-            (bool sent, bytes memory data) = address(_borrower).call{value: _loan.getLoanAmount()}("");
-            require(sent, "Failed to send Ether");
-        }
-        else{
-            (bool sent, bytes memory data) = address(_borrower).call{value: _loan.getCollateral()}("");
-            require(sent, "Failed to send Ether");
-            collateralReserve-=_loan.getCollateral();
-        }
-    }
+
+    
 
     function sanctionLoan(Loan _loan,bool _collateralDeposited,bytes memory paymentData,Borrower _borrower) public {
-        verifyCollateralDeposit(_loan,_collateralDeposited,paymentData);
-        bool collateralStatus = _loan.getCollateralStatus();
-        require(collateralStatus,"Collateral not deposited");
+        
+        verifyPayment(_collateralDeposited,paymentData);
+        _loan.setCollateralStatus();
+        uint256 loanAmount = _loan.getLoanAmount();
+        bool paymentStatus = payUser(_borrower,loanAmount);
+        if(paymentStatus==false){
+            //Pay back collateral
+            uint256 collateral = _loan.getCollateral();
+            payUser(_borrower,collateral);
+        }
         collateralReserve+=_loan.getCollateral();
         loans[_borrower] = _loan;
-        payBorrower(_loan,_borrower);
+    }
+
+    function verifyPayment(bool received, bytes memory paymentData) public {
+        require(received,"Payment not received");
+        // require(paymentData check something here,"");
+    }
+
+    function updateLoan(Borrower _borrower,Loan _loan,bool _receivedPayment,bytes memory paymentData,uint256 amount) public {
+        verifyPayment(_receivedPayment,paymentData);
+        uint256 finalAmount = _loan.updateFinalAmount(amount);
+        if (finalAmount==0){
+            //Loan paid, so return collateral
+            uint256 collateral = _loan.getCollateral();
+            payUser(_borrower,collateral);
+
+        }
+    }
+
+    function redeemInvestment(Lender _lender,Investment _investment) public {
+        uint256 finalAmount = _investment.getFinalAmount();
+        bool paymentStatus = payUser(_lender,finalAmount);
+        require(paymentStatus, "Failed to send Ether");
     }
 
 //add functionality to approve loans only if funds > investment returns

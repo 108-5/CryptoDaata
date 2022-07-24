@@ -19,6 +19,8 @@ contract Borrower is User{
         return collateral;
     }    
 
+
+
     function depositCollateral(Bank _bank, Loan _loan) public {
         bool approval = _bank.approveLoan(_loan);
         require(approval,"Loan Rejected");
@@ -27,6 +29,18 @@ contract Borrower is User{
         _bank.sanctionLoan(_loan,sent,data,this);
     }
 
+    function payLoan(Bank _bank, Loan _loan,uint256 amount) public {
+        uint finalAmount = _loan.getFinalAmount();
+        require(address(this).balance > finalAmount,"Insufficient Funds");
+        if (amount>finalAmount){
+            amount = finalAmount;
+        }
+        (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
+        require(sent, "Failed to send Ether");
+        // _bank.verifyPayment(_loan,sent,data,this);
+        _bank.updateLoan(this,_loan,sent,data,amount);
+
+    }
     
 
     receive() external payable {}

@@ -7,9 +7,15 @@ contract Loan {
     struct LoanInfo {
         uint loanID;
         uint256 amount;
-    
+        uint timeToPay;
+        uint period;
+        uint interestRate;
     }
     LoanInfo loanInfo;
+
+    uint256 finalAmount;
+    uint initTime;
+    // uint256 periodicalPayment;
 
     uint256 collateral;
     bool collateralDeposited;
@@ -27,6 +33,12 @@ contract Loan {
         loanInfo=_loanInfo;
         borrower=_borrower;
         bank = msg.sender; 
+        initTime=block.timestamp;
+        
+        uint p = _loanInfo.amount;
+        uint r = _loanInfo.interestRate;
+        uint n = _loanInfo.timeToPay/_loanInfo.period;
+        finalAmount = p*((1+(r/100))**n);
     }
     
     modifier onlyBank() {
@@ -63,8 +75,6 @@ contract Loan {
         collateralDeposited=true;
     }
 
-
-
     function getStatus() public view returns(bool){
         if (status==Status.approved){
             return true;
@@ -72,8 +82,29 @@ contract Loan {
             return false;
         }
     }   
-    
+
+
+    // function getPeriodicalPayment() public view returns(uint256){
+    //     return periodicalPayment;
+    // }
+
+
+    function getFinalAmount() public view returns(uint256){
+        return finalAmount;
+    }
+
+    function getInitTime() public view returns(uint){
+        return initTime;
+    }
+
+    function updateFinalAmount(uint256 amount) public onlyBank returns(uint256){
+        finalAmount -= amount;
+        return finalAmount;
+    }
+
 }
 
 //updates to loan upon emi payments
 //not paid loan -> actions
+
+// add functionality for higher payments than annuity to clear loans quicker
