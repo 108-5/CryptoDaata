@@ -1,30 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0;
 import "./Lender.sol";
+import "./Portfolio.sol";
 
-contract Investment {
-    struct InvestmentInfo {
-        uint investmentID;
-        uint256 amount;
-        uint interestRate;
-        uint period;
-    }
-    InvestmentInfo investmentInfo;
+contract Investment is Portfolio{
+    Info investmentInfo;
 
-    uint initTime;
     Lender lender;
 
-    constructor(InvestmentInfo memory _investmentInfo, Lender _lender) {
+    constructor(Info memory _investmentInfo, Lender _lender) {
         investmentInfo=_investmentInfo;
         lender=_lender;
         initTime = block.timestamp;
     }
 
-    function getInvestmentAmount() public view returns (uint256){
+    function getAmount() public view override returns (uint256){
         return investmentInfo.amount;
     }
 
-    function getFinalAmount() public returns (uint256){
+    function getFinalAmount() public override returns (uint256){
         uint256 finalAmount;
         uint r = investmentInfo.interestRate;
         uint256 p = investmentInfo.amount;

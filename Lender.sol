@@ -18,7 +18,7 @@ contract Lender is User{
     fallback() external payable {}
 
     function invest(Bank _bank, Investment _investment) public{
-        uint256 amount = _investment.getInvestmentAmount();
+        uint256 amount = _investment.getAmount();
         require(address(this).balance>=amount,"Insufficient Balance");
         (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
         require(sent,"Failed to send");

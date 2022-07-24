@@ -42,14 +42,14 @@ contract Bank {
     }
 
     function getCollateralRequirement(Loan _loan)public view returns(uint256) {
-        uint256 collateral = ((collateralPercentage * _loan.getLoanAmount()) / 100);
+        uint256 collateral = ((collateralPercentage * _loan.getAmount()) / 100);
         return collateral;
     }
 
     function approveLoan(Loan _loan) public returns(bool) {
         // check whether bank has enough funds to sanction loan
         require(getFunds() > _loan.getCollateral(), "Insufficient funds to sanction loan");
-        _loan.approveLoan();
+        _loan.setStatus(true);
         return _loan.getStatus();
         //emit sanction loan
 
@@ -69,7 +69,7 @@ contract Bank {
         
         verifyPayment(_collateralDeposited,paymentData);
         _loan.setCollateralStatus();
-        uint256 loanAmount = _loan.getLoanAmount();
+        uint256 loanAmount = _loan.getAmount();
         bool paymentStatus = payUser(_borrower,loanAmount);
         if(paymentStatus==false){
             //Pay back collateral
