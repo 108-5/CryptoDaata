@@ -13,10 +13,14 @@ contract Lender is User{
     }
     
     event SuccessfullyInvested(address _from, address _to, bool _sent, bytes _data);
+    event PaymentReceived(address _from, uint256 _amount);
+
 
     Investment investment;
 
-    receive() external payable {}
+    receive() external payable {
+        emit PaymentReceived(msg.sender,msg.value);
+    }
     fallback() external payable {}
 
     function invest(Bank _bank, Investment _investment) public{

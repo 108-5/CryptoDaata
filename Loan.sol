@@ -11,14 +11,13 @@ contract Loan is Portfolio{
     Info loanInfo;
 
     uint256 collateral;
-
-    // uint timeToPay;
-
     bool collateralDeposited;
 
     // false - rejected, true - approved
     bool status;
     
+    event FinalAmountCalculated(uint _p, uint _r, uint _n, uint256 _finalAmount);
+
     Borrower borrower;
 
     constructor(Info memory _loanInfo, Borrower _borrower) {
@@ -30,7 +29,8 @@ contract Loan is Portfolio{
         uint p = _loanInfo.amount;
         uint r = _loanInfo.interestRate;
         uint n = _loanInfo.tenure/_loanInfo.period;
-        finalAmount = p*((1+(r/100))**n);
+        finalAmount = p*((1+r/100)**n);
+        emit FinalAmountCalculated(p,r,n,finalAmount);
     }
     
     function getAmount() public view override returns(uint256) {

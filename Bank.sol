@@ -11,9 +11,6 @@ import "./Investment.sol";
 
 contract Bank {
     
-    receive() external payable {}
-    fallback() external payable {}
-
     mapping(Borrower => Loan) loans;
     mapping(Lender => Investment) investments;
 
@@ -21,6 +18,9 @@ contract Bank {
     event CollateralReturned(address _from, address _to);
     event LoanSanctioned(address _from, address _to);
     event LoanPaidOff();
+    event PaymentReceived(address _from, uint256 _amount);
+
+    
 
 
 
@@ -67,6 +67,7 @@ contract Bank {
         require(getFunds() > amount, "Insufficient funds");
         (bool sent, bytes memory data) = address(_user).call{value: amount}("");
         // require(sent, "Failed to send Ether");
+
         emit CompletedPayment(sent);
         return sent;
     }
@@ -92,8 +93,7 @@ contract Bank {
     }
 
     
-
-    function updateLoan(Borrower _borrower,Loan _loan,bool _receivedPayment,bytes memory paymentData,uint256 amount) public {
+    function updateLoan(Borrower _borrower,Loan _loan,uint256 amount) public {
         uint256 finalAmount = _loan.updateFinalAmount(amount);
         if (finalAmount==0){
             //Loan paid, so return collateral
@@ -109,4 +109,14 @@ contract Bank {
         require(paymentStatus, "Failed to send Ether");
     }
 
+
+
+    receive() external payable {
+        emit PaymentReceived(msg.sender,msg.value);
+    }
+    fallback() external payable {}
+
+// shift from collateral reserve to funds when loan period ends
+
+// periodic payments from borrower
 }
