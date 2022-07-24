@@ -21,7 +21,7 @@ contract Loan is Portfolio{
     
     Borrower borrower;
 
-    constructor(Info memory _loanInfo, Borrower _borrower,uint timeToPay) {
+    constructor(Info memory _loanInfo, Borrower _borrower) {
         loanInfo=_loanInfo;
         borrower=_borrower;
         bank = msg.sender; 

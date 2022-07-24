@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 abstract contract User {
     struct UserInfo{
-        uint lenderID;
+        uint ID;
         string name;
     }
     address payable public owner;
@@ -14,7 +14,7 @@ abstract contract User {
     }
 
     function getBalance() onlyOwner public view returns(uint256){
-
+        return address(this).balance;
     }
 
 }

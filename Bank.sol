@@ -17,12 +17,15 @@ contract Bank {
     mapping(Borrower => Loan) loans;
     mapping(Lender => Investment) investments;
 
+    event Pay(address _from, address _to, bool _sent, bytes _data);
+
+
     uint interest;
     uint collateralPercentage;
 
     uint256 collateralReserve;
 
-    constructor(uint _interest, uint _collateralPercentage) {
+    constructor (uint _interest, uint _collateralPercentage) payable {
         interest = _interest;
         collateralPercentage = _collateralPercentage;
     }
@@ -59,6 +62,7 @@ contract Bank {
         require(getFunds() > amount, "Insufficient funds");
         (bool sent, bytes memory data) = address(_user).call{value: amount}("");
         // require(sent, "Failed to send Ether");
+        emit Pay(address(this),address(_user),sent,data);
         return sent;
     }
 
