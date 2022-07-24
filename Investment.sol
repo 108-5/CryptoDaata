@@ -18,7 +18,7 @@ contract Investment is Portfolio{
         return investmentInfo.amount;
     }
 
-    function getFinalAmount() public override returns (uint256){
+    function getFinalAmount() public view override returns (uint256){
         uint256 finalAmount;
         uint r = investmentInfo.interestRate;
         uint256 p = investmentInfo.amount;

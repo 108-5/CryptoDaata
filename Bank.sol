@@ -17,7 +17,12 @@ contract Bank {
     mapping(Borrower => Loan) loans;
     mapping(Lender => Investment) investments;
 
-    event Pay(address _from, address _to, bool _sent, bytes _data);
+    event CompletedPayment(bool _sent);
+    event CollateralReturned(address _from, address _to);
+    event LoanSanctioned(address _from, address _to);
+    event LoanPaidOff();
+
+
 
 
     uint interest;
@@ -62,16 +67,15 @@ contract Bank {
         require(getFunds() > amount, "Insufficient funds");
         (bool sent, bytes memory data) = address(_user).call{value: amount}("");
         // require(sent, "Failed to send Ether");
-        emit Pay(address(this),address(_user),sent,data);
+        emit CompletedPayment(sent);
         return sent;
     }
 
 
     
 
-    function sanctionLoan(Loan _loan,bool _collateralDeposited,bytes memory paymentData,Borrower _borrower) public {
+    function sanctionLoan(Loan _loan,Borrower _borrower) public {
         
-        verifyPayment(_collateralDeposited,paymentData);
         _loan.setCollateralStatus();
         uint256 loanAmount = _loan.getAmount();
         bool paymentStatus = payUser(_borrower,loanAmount);
@@ -79,24 +83,23 @@ contract Bank {
             //Pay back collateral
             uint256 collateral = _loan.getCollateral();
             payUser(_borrower,collateral);
+            emit CollateralReturned(address(this),address(_borrower));
+        } else {
+            emit LoanSanctioned(address(this),address(_borrower));
         }
         collateralReserve+=_loan.getCollateral();
         loans[_borrower] = _loan;
     }
 
-    function verifyPayment(bool received, bytes memory paymentData) public {
-        require(received,"Payment not received");
-        // require(paymentData check something here,"");
-    }
+    
 
     function updateLoan(Borrower _borrower,Loan _loan,bool _receivedPayment,bytes memory paymentData,uint256 amount) public {
-        verifyPayment(_receivedPayment,paymentData);
         uint256 finalAmount = _loan.updateFinalAmount(amount);
         if (finalAmount==0){
             //Loan paid, so return collateral
             uint256 collateral = _loan.getCollateral();
             payUser(_borrower,collateral);
-
+            emit LoanPaidOff();
         }
     }
 
@@ -106,10 +109,4 @@ contract Bank {
         require(paymentStatus, "Failed to send Ether");
     }
 
-//add functionality to approve loans only if funds > investment returns
-// shift from collateral reserve to funds when loan period ends
-
-// periodic payments from borrower
-// withdraw function for lender
-// implement time
 }

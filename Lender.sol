@@ -12,7 +12,7 @@ contract Lender is User{
         owner = payable(msg.sender);
     }
     
-    event Pay(address _from, address _to, bool _sent, bytes _data);
+    event SuccessfullyInvested(address _from, address _to, bool _sent, bytes _data);
 
     Investment investment;
 
@@ -24,14 +24,11 @@ contract Lender is User{
         require(address(this).balance>=amount,"Insufficient Balance");
         (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
         require(sent,"Failed to send");
-        emit Pay(address(this), address(_bank),sent,data);
-        // investment=_investment;
-        // return msg.data;
+        emit SuccessfullyInvested(address(this), address(_bank),sent,data);
     }
 
     function withdraw(Bank _bank, Investment _investment) public {
         _bank.redeemInvestment(this,_investment);
     }
     
-    // function withdraw()
 }

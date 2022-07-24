@@ -6,7 +6,7 @@ import "./Loan.sol";
 contract Borrower is User{
     UserInfo borrowerInfo;
 
-    event Pay(address _from, address _to, bool _sent, bytes _data);
+    event CompletedPayment(bool _sent);
 
     
     constructor(UserInfo memory _borrowerInfo) payable {
@@ -27,8 +27,8 @@ contract Borrower is User{
         require(approval,"Loan Rejected");
         (bool sent, bytes memory data) = address(_bank).call{value: _loan.getCollateral()}("");
         require(sent, "Failed to send Ether");
-        emit Pay(address(this),address(_bank),sent,data);
-        _bank.sanctionLoan(_loan,sent,data,this);
+        emit CompletedPayment(sent);
+        _bank.sanctionLoan(_loan,this);
     }
 
     function payLoan(Bank _bank, Loan _loan,uint256 amount) public {
@@ -38,7 +38,7 @@ contract Borrower is User{
             amount = finalAmount;
         }
         (bool sent, bytes memory data) = address(_bank).call{value: amount}("");
-        emit Pay(address(this),address(_bank),sent,data);
+        emit CompletedPayment(sent);
 
         require(sent, "Failed to send Ether");
         // _bank.verifyPayment(_loan,sent,data,this);
